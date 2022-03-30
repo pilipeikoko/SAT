@@ -1,16 +1,54 @@
-# This is a sample Python script.
+import nltk,random
+nltk.download('punkt')
+nltk.download('averaged_perceptron_tagger')
+nltk.download('maxent_ne_chunker')
+nltk.download('words')
+nltk.download('brown')
+nltk.download('names')
+nltk.download('wordnet')
+nltk.download('omw-1.4')
+nltk.download('treebank')
+# in terminal pip3 install pandas
+from nltk.corpus import treebank
+from nltk.corpus import names
+from nltk.corpus import wordnet as wn
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+sentence = "At eight o'clock on Thursday morning. Arthur didn't feel very good."
+#Tokenization
+tokens = nltk.word_tokenize(sentence)
+print(tokens)
+#POS Tag
+tagged = nltk.pos_tag(tokens)
+print(tagged[0:6])
 
+# Representing Tagged token
+tagged_token = nltk.tag.str2tuple('fly/NN')
+print(tagged_token)
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+entities = nltk.chunk.ne_chunk(tagged)
+print(entities)
 
+print(nltk.corpus.brown.tagged_words())
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+# classification : Gender identification
+def gender_features(word):
+    return {'last_letter': word[-1]}
+print(gender_features('Shrek'))
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+labeled_names = ([(name, 'male') for name in names.words('male.txt')] + [(name, 'female') for name in names.words('female.txt')])
+random.shuffle(labeled_names)
+featuresets = [(gender_features(n), gender) for (n, gender) in labeled_names]
+train_set, test_set = featuresets[500:], featuresets[:500]
+classifier = nltk.NaiveBayesClassifier.train(train_set)
+print(classifier.classify(gender_features('Neo')))
+print(classifier.classify(gender_features('Trinity')))
+print(nltk.classify.accuracy(classifier, test_set))
+
+#Wordnet
+print(wn.synsets('motorcar'))
+print(wn.synset('car.n.01').lemma_names())
+print(wn.synset('car.n.01').definition())
+
+# display a prase tree form corpus treebank
+t = treebank.parsed_sents('wsj_0001.mrg')[0]
+t.draw() # opens a new window. 
