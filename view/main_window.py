@@ -1,15 +1,13 @@
 import tkinter
 import tkinter as tk
 from tkinter import END
-#https://github.com/emilmont/pyStatParser
-from stat_parser import Parser
-
-import nltk
-from nltk import Tree
-from nltk.corpus import treebank
-from nltk.draw import TreeWidget
-from nltk.draw.util import CanvasFrame
-
+from svglib.svglib import svg2rlg
+from reportlab.graphics import renderPM
+import spacy
+from spacy import displacy
+from pathlib import Path
+from PIL import ImageTk, Image as PIL_image
+from io import BytesIO
 
 class MainWindow:
     def __init__(self):
@@ -27,15 +25,44 @@ class MainWindow:
 
         self._button_help = tk.Button(self._left_frame_buttons, text="Помощь",
                                       command=self.about)
-        self._canvas_frame = CanvasFrame(self._tree_frame)
-        self._tree = Tree.fromstring('(S (NP this tree) (VP (V is) (AdjP pretty)))')
-        self._tree_widget = TreeWidget(self._canvas_frame.canvas(), self._tree)
 
-        self._parser = Parser()
+        self._hbar = tk.Scrollbar(self._tree_frame, orient=tk.HORIZONTAL)
+        self._vbar = tk.Scrollbar(self._tree_frame, orient=tk.VERTICAL)
+
+        self._imageCanvas = tk.Canvas(self._tree_frame, bg='white', width=300, height=300,
+                                      scrollregion=(0, 0, 500, 500))
+        self._configureScrollBars()
+
+        self._imageCanvas.config(width=300, height=300)
+        self._imageCanvas.config(xscrollcommand=self._hbar.set, yscrollcommand=self._vbar.set)
+        self._imageCanvas.pack(side=tk.LEFT, expand=True, fill=tk.BOTH)
+
+        self._nlp = spacy.load("en_core_web_sm")
 
     def start(self):
         self._configure_window()
         self._window.mainloop()
+        return
+
+    def _generateTree(self, message):
+        doc = self._nlp(message)
+        svg = displacy.render(doc, style="dep", jupyter=False)
+        drawing = svg2rlg(path=BytesIO(bytes(svg, 'ascii')))
+        out = BytesIO()
+        renderPM.drawToFile(drawing, out, fmt="PNG")
+        img = PIL_image.open(out)
+        pimg = ImageTk.PhotoImage(img)
+
+        self._imageCanvas.config(scrollregion=(0, 0, img.size[0], img.size[1]))
+        self._imageCanvas.create_image(0, 0, image=pimg, anchor="nw")
+        return
+
+    def _configureScrollBars(self):
+        self._hbar.pack(side=tk.BOTTOM, fill=tk.X)
+        self._hbar.config(command=self._imageCanvas.xview)
+
+        self._vbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self._vbar.config(command=self._imageCanvas.yview)
 
     def _configure_window(self):
         self._window.title("Синтаксический анализ текстов")
@@ -55,11 +82,6 @@ class MainWindow:
         self._dictionary_documentation_txt_edit.grid(row=3, column=0, sticky="e", ipady=5)
         self._dictionary_documentation_txt_edit.configure(width=25, borderwidth=10)
 
-        self._tree_frame.configure(background='black')
-
-        self._canvas_frame.pack(fill=tk.BOTH, expand=1)
-        self._canvas_frame.add_widget(self._tree_widget, 10, 10)  # (10,10) offsets
-
     def open_file(self):
         return
 
@@ -67,15 +89,7 @@ class MainWindow:
         return
 
     def generate(self):
-        tokens = nltk.word_tokenize(self._text_field.get("1.0", END))
-        tagged = nltk.pos_tag(tokens)
-        entities = nltk.chunk.ne_chunk(tagged)
-        nltk.corpus.brown.tagged_words()
-        self._tree_widget.canvas().delete("all")
-        self._tree = Tree.fromstring(self._parser.parse(self._text_field.get("1.0", END)))
-        self._tree_widget = TreeWidget(self._canvas_frame.canvas(), self._tree)
-        self._canvas_frame.add_widget(self._tree_widget)  # (10,10) offsets
-
+        self._generateTree(self._text_field.get("1.0", END))
         return
 
     def save(self):
