@@ -8,6 +8,9 @@ from spacy import displacy
 from pathlib import Path
 from PIL import ImageTk, Image as PIL_image
 from io import BytesIO
+from tkinter.filedialog import askopenfilename
+from tkinter.filedialog import asksaveasfile
+
 
 class MainWindow:
     def __init__(self):
@@ -20,8 +23,8 @@ class MainWindow:
         self._left_frame_buttons = tk.Frame(self._window)
         self._dictionary_documentation_label = tk.Label(self._window, text="Документирование анализа текста")
         self._button_open = tk.Button(self._left_frame_buttons, text="Открыть файл", command=self.open_file)
-        self._save_button = tk.Button(self._left_frame_buttons, text="Сохранить",
-                                      command=self.save)
+        self._save_button = tk.Button(self._left_frame_buttons, text="Сохранить картинку",
+                                      command=self.savePicture)
 
         self._button_help = tk.Button(self._left_frame_buttons, text="Помощь",
                                       command=self.about)
@@ -83,6 +86,15 @@ class MainWindow:
         self._dictionary_documentation_txt_edit.configure(width=25, borderwidth=10)
 
     def open_file(self):
+        filepath = askopenfilename(
+            filetypes=[("Текстовый документ", "*.txt")]
+        )
+        if not filepath:
+            return
+        file = open(filepath)
+        file_content = file.read()
+        self._text_field.insert("1.0", file_content)
+        self.generate()
         return
 
     def about(self):
@@ -90,7 +102,23 @@ class MainWindow:
 
     def generate(self):
         self._generateTree(self._text_field.get("1.0", END))
+
+        self._dictionary_documentation_txt_edit.insert(tkinter.END, self._text_field.get("1.0", END) + "\n")
+
         return
 
-    def save(self):
+    def savePicture(self):
+        f = asksaveasfile(mode='wb', defaultextension=".png")
+        if f is None:
+            return
+        doc = self._nlp(self._text_field.get("1.0", END))
+        svg = displacy.render(doc, style="dep", jupyter=False)
+        drawing = svg2rlg(path=BytesIO(bytes(svg, 'ascii')))
+
+        out = BytesIO()
+        renderPM.drawToFile(drawing, out, fmt="PNG")
+        img = PIL_image.open(out)
+        img.save(f)
+
+        f.close()  # `()` was missing.
         return
