@@ -5,7 +5,6 @@ from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPM
 import spacy
 from spacy import displacy
-from pathlib import Path
 from PIL import ImageTk, Image as PIL_image
 from io import BytesIO
 from tkinter.filedialog import askopenfilename
@@ -19,14 +18,14 @@ class MainWindow:
         self._tree_frame = tkinter.Frame(self._window)
         self._dictionary_documentation_txt_edit = tk.Text(self._window)
         self._text_field = tkinter.Text(self._window)
-        self._generate_button = tkinter.Button(self._window, text="Сформировать дерево", command=self.generate)
+        self._generate_button = tkinter.Button(self._window, text="Generate tree", command=self.generate)
         self._left_frame_buttons = tk.Frame(self._window)
-        self._dictionary_documentation_label = tk.Label(self._window, text="Документирование анализа текста")
-        self._button_open = tk.Button(self._left_frame_buttons, text="Открыть файл", command=self.open_file)
-        self._save_button = tk.Button(self._left_frame_buttons, text="Сохранить картинку",
+        self._dictionary_documentation_label = tk.Label(self._window, text="History")
+        self._button_open = tk.Button(self._left_frame_buttons, text="Open file", command=self.open_file)
+        self._save_button = tk.Button(self._left_frame_buttons, text="   Save tree   ",
                                       command=self.savePicture)
 
-        self._button_help = tk.Button(self._left_frame_buttons, text="Помощь",
+        self._button_help = tk.Button(self._left_frame_buttons, text="   Help   ",
                                       command=self.about)
 
         self._hbar = tk.Scrollbar(self._tree_frame, orient=tk.HORIZONTAL)
@@ -56,7 +55,7 @@ class MainWindow:
         img = PIL_image.open(out)
         pimg = ImageTk.PhotoImage(img)
 
-        self._imageCanvas.config(scrollregion=(0, 0, img.size[0], img.size[1]))
+        self._imageCanvas.config(scrollregion=(0, 0, img.size[0] *2 , img.size[1]*2 ))
         self._imageCanvas.create_image(0, 0, image=pimg, anchor="nw")
         return
 
@@ -68,7 +67,7 @@ class MainWindow:
         self._vbar.config(command=self._imageCanvas.yview)
 
     def _configure_window(self):
-        self._window.title("Синтаксический анализ текстов")
+        self._window.title("Syntax text analysis")
 
         self._left_frame_buttons.grid(row=0, column=0, rowspan=2, sticky="ns")
         self._button_open.grid(row=0, column=0, sticky="ew", padx=5, pady=5)
@@ -98,6 +97,8 @@ class MainWindow:
         return
 
     def about(self):
+        tk.messagebox.showinfo("Help",
+                            "To start, open text file or enter your sentence.\nEnglish language.\nSyntax parsed tree will generated.")
         return
 
     def generate(self):
